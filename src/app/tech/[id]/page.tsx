@@ -3,19 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import TechDashboard from '../../../components/Ops/TechDashboard';
 import { Technician } from '../../mockDB';
 
-export async function generateStaticParams() {
-  try {
-    const { data: profiles } = await supabase.from('profiles').select('slug');
-    if (!profiles || profiles.length === 0) {
-      return [{ id: 'carlos-electric' }, { id: 'sean-cotton' }];
-    }
-    return profiles.map((profile) => ({
-      id: profile.slug,
-    }));
-  } catch (e) {
-    return [{ id: 'carlos-electric' }, { id: 'sean-cotton' }];
-  }
-}
+export const dynamic = 'force-dynamic';
 
 export default async function TechDashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

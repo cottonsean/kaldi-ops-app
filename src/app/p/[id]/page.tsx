@@ -1,19 +1,7 @@
 import { notFound } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 
-export async function generateStaticParams() {
-  try {
-    const { data: profiles } = await supabase.from('profiles').select('slug');
-    if (!profiles || profiles.length === 0) {
-      return [{ id: 'carlos-electric' }, { id: 'sean-cotton' }];
-    }
-    return profiles.map((profile) => ({
-      id: profile.slug,
-    }));
-  } catch (e) {
-    return [{ id: 'carlos-electric' }, { id: 'sean-cotton' }];
-  }
-}
+export const dynamic = 'force-dynamic';
 
 export default async function HomeownerProfile({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

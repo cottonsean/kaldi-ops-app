@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase as defaultSupabase } from '../../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 const seedData = [
   {
@@ -44,14 +45,14 @@ export default function AdminHQ() {
   const [seedStatus, setSeedStatus] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
+  // Manual Override State
+  const [manualUrl, setManualUrl] = useState('');
+  const [manualKey, setManualKey] = useState('');
+
   const runSystemCheck = async () => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
-    // Log directly to console for mobile debugging
-    console.log('DEBUG_URL:', url);
-    console.log('DEBUG_KEY:', key?.substring(0, 10) + '...');
-
     const info = {
       urlFound: !!url && !url.includes('placeholder'),
       keyFound: !!key && !key.includes('placeholder'),
@@ -61,20 +62,29 @@ export default function AdminHQ() {
     };
 
     try {
-      const { data, error } = await supabase.from('profiles').select('count');
+      const { error } = await defaultSupabase.from('profiles').select('count');
       setDebugInfo({ ...info, apiResponse: error ? `Error: ${error.message}` : 'Success: Connection Live' });
     } catch (err: any) {
       setDebugInfo({ ...info, apiResponse: `Fatal Error: ${err.message}` });
     }
   };
 
-  const handleSeed = async () => {
+  const handleSeed = async (isManual = false) => {
     setIsSeeding(true);
     setSeedStatus('Starting seed...');
     
     try {
+      let client = defaultSupabase;
+
+      if (isManual) {
+        if (!manualUrl || !manualKey) {
+          throw new Error('Please enter both URL and Key for manual seed.');
+        }
+        client = createClient(manualUrl, manualKey);
+      }
+
       for (const profile of seedData) {
-        const { error } = await supabase
+        const { error } = await client
           .from('profiles')
           .upsert(profile, { onConflict: 'slug' });
           
@@ -130,14 +140,45 @@ export default function AdminHQ() {
             </button>
           </div>
 
-          <div className="bg-[#15171c] border border-[#2d2f36] rounded-3xl p-8 space-y-6 shadow-2xl">
+          <div className="bg-[#15171c] border border-[#2d2f36] rounded-3xl p-8 space-y-6 shadow-2xl relative overflow-hidden">
             <div className="w-16 h-16 bg-[#38bdf8]/10 rounded-full flex items-center justify-center border border-[#38bdf8]/20 text-[#38bdf8]">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             </div>
             <h2 className="text-2xl font-bold">Initialize Database</h2>
-            <p className="text-[#94a3b8] text-sm">Push initial beta profiles (Carlos & Sean) to your live Supabase cloud.</p>
+            
+            {/* Manual Override Section */}
+            <div className="bg-black/20 p-4 rounded-xl space-y-3 border border-white/5">
+              <p className="text-[10px] font-bold text-[#38bdf8] uppercase tracking-widest">Manual Override (If System Check Fails)</p>
+              <input 
+                type="text" 
+                placeholder="Supabase URL" 
+                value={manualUrl}
+                onChange={(e) => setManualUrl(e.target.value)}
+                className="w-full bg-[#0a0a0c] border border-[#2d2f36] px-3 py-2 rounded-lg text-xs outline-none focus:border-[#38bdf8] transition-colors"
+              />
+              <input 
+                type="password" 
+                placeholder="Supabase Anon Key" 
+                value={manualKey}
+                onChange={(e) => setManualKey(e.target.value)}
+                className="w-full bg-[#0a0a0c] border border-[#2d2f36] px-3 py-2 rounded-lg text-xs outline-none focus:border-[#38bdf8] transition-colors"
+              />
+              <button 
+                onClick={() => handleSeed(true)}
+                disabled={isSeeding || !manualUrl || !manualKey}
+                className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition disabled:opacity-30"
+              >
+                Manual Seed
+              </button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#2d2f36]"></div></div>
+              <div className="relative flex justify-center text-[10px] uppercase text-[#444] font-bold"><span className="bg-[#15171c] px-2">Or Use Vercel Keys</span></div>
+            </div>
+
             <button 
-              onClick={handleSeed}
+              onClick={() => handleSeed(false)}
               disabled={isSeeding}
               className="w-full bg-[#38bdf8] text-black py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-[1.02] transition active:scale-95 disabled:opacity-50"
             >

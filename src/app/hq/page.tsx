@@ -69,7 +69,7 @@ export default function AdminHQ() {
     }
   };
 
-  const handleSeed = async (isManual = false) => {
+  const handleSeed = async (isManual = false, overrideUrl?: string, overrideKey?: string) => {
     setIsSeeding(true);
     setSeedStatus('Starting seed...');
     
@@ -77,10 +77,10 @@ export default function AdminHQ() {
       let client = defaultSupabase;
 
       if (isManual) {
-        if (!manualUrl || !manualKey) {
+        if (!overrideUrl || !overrideKey) {
           throw new Error('Please enter both URL and Key for manual seed.');
         }
-        client = createClient(manualUrl, manualKey);
+        client = createClient(overrideUrl, overrideKey);
       }
 
       for (const profile of seedData) {
@@ -150,22 +150,24 @@ export default function AdminHQ() {
             <div className="bg-black/20 p-4 rounded-xl space-y-3 border border-white/5">
               <p className="text-[10px] font-bold text-[#38bdf8] uppercase tracking-widest">Manual Override (If System Check Fails)</p>
               <input 
+                id="manual-url" 
                 type="text" 
                 placeholder="Supabase URL" 
-                value={manualUrl}
-                onChange={(e) => setManualUrl(e.target.value)}
                 className="w-full bg-[#0a0a0c] border border-[#2d2f36] px-3 py-2 rounded-lg text-xs outline-none focus:border-[#38bdf8] transition-colors"
               />
               <input 
+                id="manual-key" 
                 type="password" 
                 placeholder="Supabase Anon Key" 
-                value={manualKey}
-                onChange={(e) => setManualKey(e.target.value)}
                 className="w-full bg-[#0a0a0c] border border-[#2d2f36] px-3 py-2 rounded-lg text-xs outline-none focus:border-[#38bdf8] transition-colors"
               />
               <button 
-                onClick={() => handleSeed(true)}
-                disabled={isSeeding || !manualUrl || !manualKey}
+                onClick={() => {
+                  const url = (document.getElementById('manual-url') as HTMLInputElement).value;
+                  const key = (document.getElementById('manual-key') as HTMLInputElement).value;
+                  handleSeed(true, url, key);
+                }}
+                disabled={isSeeding}
                 className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition disabled:opacity-30"
               >
                 Manual Seed

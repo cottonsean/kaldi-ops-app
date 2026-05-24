@@ -40,45 +40,14 @@ const seedData = [
   }
 ];
 
-// Isolated Sub-component to prevent re-render focus issues
-function ManualSeedBox({ onSeed, isSeeding }: { onSeed: (url: string, key: string) => void, isSeeding: boolean }) {
-  const urlRef = useRef<HTMLInputElement>(null);
-  const keyRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <div className="bg-black/20 p-4 rounded-xl space-y-3 border border-white/5">
-      <p className="text-[10px] font-bold text-[#38bdf8] uppercase tracking-widest">Manual Override (Bulletproof Mode)</p>
-      <input 
-        ref={urlRef}
-        type="text" 
-        placeholder="Supabase URL" 
-        className="w-full bg-[#0a0a0c] border border-[#2d2f36] px-3 py-2 rounded-lg text-xs outline-none focus:border-[#38bdf8] transition-colors"
-      />
-      <input 
-        ref={keyRef}
-        type="password" 
-        placeholder="Supabase Anon Key" 
-        className="w-full bg-[#0a0a0c] border border-[#2d2f36] px-3 py-2 rounded-lg text-xs outline-none focus:border-[#38bdf8] transition-colors"
-      />
-      <button 
-        onClick={() => {
-          if (urlRef.current && keyRef.current) {
-            onSeed(urlRef.current.value, keyRef.current.value);
-          }
-        }}
-        disabled={isSeeding}
-        className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition disabled:opacity-30"
-      >
-        Manual Seed
-      </button>
-    </div>
-  );
-}
-
 export default function AdminHQ() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [seedStatus, setSeedStatus] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+
+  // Claude's Bulletproof Refs
+  const manualUrlRef = useRef<HTMLTextAreaElement>(null);
+  const manualKeyRef = useRef<HTMLTextAreaElement>(null);
 
   const runSystemCheck = async () => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -100,7 +69,7 @@ export default function AdminHQ() {
     }
   };
 
-  const handleSeed = async (isManual = false, overrideUrl?: string, overrideKey?: string) => {
+  const handleSeed = async (isManual = false) => {
     setIsSeeding(true);
     setSeedStatus('Starting seed...');
     
@@ -108,6 +77,9 @@ export default function AdminHQ() {
       let client = defaultSupabase;
 
       if (isManual) {
+        const overrideUrl = manualUrlRef.current?.value;
+        const overrideKey = manualKeyRef.current?.value;
+
         if (!overrideUrl || !overrideKey) {
           throw new Error('Please enter both URL and Key for manual seed.');
         }
@@ -172,15 +144,34 @@ export default function AdminHQ() {
           </div>
 
           <div className="bg-[#15171c] border border-[#2d2f36] rounded-3xl p-8 space-y-6 shadow-2xl relative overflow-hidden">
-            <div className="w-16 h-16 bg-[#38bdf8]/10 rounded-full flex items-center justify-center border border-white/10 text-[#38bdf8]">
+            <div className="w-16 h-16 bg-[#38bdf8]/10 rounded-full flex items-center justify-center border border-[#38bdf8]/20 text-[#38bdf8]">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             </div>
             <h2 className="text-2xl font-bold">Initialize Database</h2>
             
-            <ManualSeedBox 
-              isSeeding={isSeeding} 
-              onSeed={(url, key) => handleSeed(true, url, key)} 
-            />
+            {/* Manual Override Section */}
+            <div className="bg-black/20 p-4 rounded-xl space-y-3 border border-white/5">
+              <p className="text-[10px] font-bold text-[#38bdf8] uppercase tracking-widest">Manual Override (Zero-Friction Textarea)</p>
+              <textarea 
+                ref={manualUrlRef}
+                placeholder="Paste Supabase URL" 
+                rows={1}
+                className="w-full bg-[#0a0a0c] border border-[#2d2f36] px-3 py-2 rounded-lg text-xs outline-none focus:border-[#38bdf8] transition-colors resize-none"
+              />
+              <textarea 
+                ref={manualKeyRef}
+                placeholder="Paste Supabase Anon Key" 
+                rows={2}
+                className="w-full bg-[#0a0a0c] border border-[#2d2f36] px-3 py-2 rounded-lg text-xs outline-none focus:border-[#38bdf8] transition-colors resize-none"
+              />
+              <button 
+                onClick={() => handleSeed(true)}
+                disabled={isSeeding}
+                className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition disabled:opacity-30"
+              >
+                Manual Seed
+              </button>
+            </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#2d2f36]"></div></div>
